@@ -1,9 +1,12 @@
 import hashlib
 import json
 import os
+from pathlib import Path
 from typing import Optional
 
 import httpx
+
+from services.onnx_predictor import predict_image
 
 
 def _deterministic_score(seed: str, salt: str) -> float:
@@ -105,6 +108,41 @@ async def analyze_fundus(
             "dr_score": dr_score,
             "htn_score": htn_score,
             "raw": json.dumps({"dr_score": dr_score, "htn_score": htn_score}, ensure_ascii=False),
+        }
+
+    if provider == "onnx":
+        image_paths = [p for p in [left_image_path, right_image_path] if p and Path(p).exists()]
+        if not image_paths:
+            raise RuntimeError("缺少眼底图像")
+
+        try:
+            result = predict_image(image_paths[0])
+        except Exception as exc:
+            raise RuntimeError(f"ONNX 推理失败: {exc}") from exc
+
+        probabilities = result.get("probabilities", {})
+        detected = [str(item).upper() for item in result.get("detected_diseases", [])]
+        dr_score = 0.0
+        if detected:
+            for label in detected:
+                dr_score = max(dr_score, float(probabilities.get(label, 0.0)))
+        else:
+            dr_score = float(probabilities.get("NORMAL", 0.0))
+
+        htn_score = _deterministic_score(seed, "htn")
+        return {
+            "provider": "onnx",
+            "dr_score": round(dr_score, 4),
+            "htn_score": htn_score,
+            "raw": json.dumps(
+                {
+                    "provider": "onnx",
+                    "dr_score": round(dr_score, 4),
+                    "htn_score": htn_score,
+                    "result": result,
+                },
+                ensure_ascii=False,
+            ),
         }
 
     if provider == "hf_dr":

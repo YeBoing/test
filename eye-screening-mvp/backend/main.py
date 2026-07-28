@@ -13,6 +13,7 @@ from database import Base, engine, get_db
 from models import Patient, Screening
 from schemas import FollowupUpdate, PatientCreate, PatientOut, ScreeningCreate, ScreeningOut
 from services.ai_provider import analyze_fundus
+from services.onnx_predictor import predict_image
 from services.risk_mapper import level_from_score, recommendation
 
 load_dotenv()
@@ -141,6 +142,31 @@ async def upload_images(
         "screening_id": screening.id,
         "qc_status": screening.qc_status,
         "qc_message": "；".join(qc_msgs),
+    }
+
+
+@app.post("/predict")
+async def predict_endpoint(file: UploadFile = File(...)):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="请上传图片文件")
+
+    folder = UPLOAD_DIR / "predict"
+    folder.mkdir(parents=True, exist_ok=True)
+    save_path = folder / f"{uuid.uuid4().hex}_{Path(file.filename or 'upload').name}"
+    save_path.write_bytes(await file.read())
+
+    try:
+        result = predict_image(str(save_path))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"推理失败: {exc}") from exc
+
+    return {
+        "ok": True,
+        "image_path": str(save_path),
+        "result": result,
+        "detected_diseases": result.get("detected_diseases", []),
+        "num_diseases": result.get("num_diseases", 0),
+        "probabilities": result.get("probabilities", {}),
     }
 
 

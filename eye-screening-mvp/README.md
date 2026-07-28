@@ -32,11 +32,14 @@ streamlit run app.py
 复制根目录 `.env.example` 为 `.env`（可选）。
 
 - `AI_PROVIDER=mock`（默认）
+- `AI_PROVIDER=onnx`（启用本地 ONNX 模型）
+- `AI_PROVIDER=hf_dr`（启用 Hugging Face 糖网图像分类模型）
 - `AI_API_URL=`（接真实托管 API 时填）
 - `AI_API_KEY=`（接真实托管 API 时填）
-- `AI_PROVIDER=hf_dr`（启用 Hugging Face 糖网图像分类模型）
 - `HF_DR_MODEL=dima806/diabetic_retinopathy_detection`（糖网模型 ID，可替换）
 - `HF_API_TOKEN=`（Hugging Face Token，建议填写）
+- `ONNX_MODEL_PATH=models/ocunet.onnx`（本地 ONNX 模型路径）
+- `ONNX_METADATA_PATH=models/ocunet_metadata.json`（模型标签元数据路径）
 
 ### 启用真实糖网模型
 
@@ -51,6 +54,7 @@ BACKEND_URL=http://localhost:8000
 
 说明：
 
+- 现在默认支持本地 ONNX 模型推理。将 `ocunet.onnx` 和 `ocunet_metadata.json` 放在后端的 `models/` 目录下，即可通过 `/predict` 或筛查流程调用。
 - 糖网风险来自 Hugging Face 图像分类模型。
 - 高血压相关风险目前仍为 MVP 演示字段，暂不作为真实医学模型结论。
 - 不同 Hugging Face 模型标签可能不同，后端已兼容 `0-4`、`mild/moderate/severe/proliferative`、`no DR` 等常见标签。
