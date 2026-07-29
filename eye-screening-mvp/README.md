@@ -14,7 +14,7 @@
 ```bash
 cd eye-screening-mvp/backend
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --port 8000
 ```
 
 ### 前端
@@ -22,7 +22,7 @@ uvicorn main:app --reload --port 8000
 ```bash
 cd eye-screening-mvp/frontend
 pip install -r requirements.txt
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
 默认后端地址：`http://localhost:8000`
